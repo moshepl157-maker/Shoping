@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>רשימת קניות</title>
+<style>
+  :root{
+    --paper:#F0EDE4;
+    --surface:#FFFFFF;
+    --ink:#2A2622;
+    --ink-soft:#6B6459;
+    --teal:#2B5D53;
+    --teal-dark:#1E453D;
+    --mustard:#C79A3B;
+    --danger:#B4483A;
+    --line:#DFD9C8;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    min-height:100vh;
+  }
+  header{
+    background:var(--teal);
+    color:#fff;
+    padding:22px 18px 20px;
+    border-bottom:4px solid var(--teal-dark);
+  }
+  header h1{
+    margin:0;
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:26px;
+    font-weight:600;
+    letter-spacing:0.2px;
+  }
+  header p{
+    margin:6px 0 0;
+    font-size:13px;
+    color:#D8E7E2;
+  }
+  main{
+    max-width:640px;
+    margin:0 auto;
+    padding:16px 14px 110px;
+  }
+  .section-title{
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:16px;
+    color:var(--teal-dark);
+    margin:22px 0 10px;
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+  }
+  .section-title .count{
+    font-size:12px;
+    color:var(--ink-soft);
+    font-family:-apple-system,sans-serif;
+  }
+  .cat-row{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:6px;
+    scrollbar-width:none;
+  }
+  .cat-row::-webkit-scrollbar{display:none;}
+  .cat-chip{
+    flex:0 0 auto;
+    background:var(--surface);
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:8px 14px;
+    border-radius:20px;
+    font-size:14px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .cat-chip.active{
+    background:var(--teal);
+    border-color:var(--teal);
+    color:#fff;
+  }
+  .preset-grid{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:10px;
+  }
+  .preset-item{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:9px 12px;
+    font-size:14px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .preset-item:active{ background:#EAF1EF; }
+  .preset-item .plus{
+    color:var(--teal);
+    font-weight:700;
+    font-size:16px;
+  }
+  .add-custom{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:12px;
+    margin-top:12px;
+  }
+  .add-custom .row{
+    display:flex;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .add-custom input[type="text"]{
+    flex:1;
+    min-width:0;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-size:14px;
+    background:#FBFAF6;
+  }
+  .add-custom select{
+    padding:9px 8px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-size:14px;
+    background:#FBFAF6;
+  }
+  .add-custom button{
+    background:var(--teal);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:9px 16px;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .list-group{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+    margin-bottom:14px;
+  }
+  .list-group h3{
+    margin:0;
+    padding:10px 14px;
+    font-size:13px;
+    background:#F5F2E9;
+    color:var(--teal-dark);
+    border-bottom:1px solid var(--line);
+    font-family:Georgia,serif;
+    font-weight:600;
+  }
+  .item-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+    gap:10px;
+  }
+  .item-row:last-child{ border-bottom:none; }
+  .item-name{
+    font-size:14px;
+    flex:1;
+    min-width:0;
+    overflow-wrap:break-word;
+  }
+  .item-name.checked{
+    text-decoration:line-through;
+    color:var(--ink-soft);
+  }
+  .qty-controls{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex:0 0 auto;
+  }
+  .qty-controls button{
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:#FBFAF6;
+    font-size:15px;
+    cursor:pointer;
+    line-height:1;
+  }
+  .qty-controls .qty-val{
+    min-width:34px;
+    text-align:center;
+    font-size:13px;
+  }
+  .unit-label{
+    font-size:11px;
+    color:var(--ink-soft);
+    min-width:28px;
+  }
+  .del-btn{
+    background:none;
+    border:none;
+    color:var(--danger);
+    font-size:16px;
+    cursor:pointer;
+    padding:2px 4px;
+  }
+  .empty-state{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:14px;
+    padding:24px 10px;
+  }
+  .bottom-bar{
+    position:fixed;
+    bottom:0;
+    right:0;
+    left:0;
+    background:var(--surface);
+    border-top:1px solid var(--line);
+    padding:10px 14px;
+    display:flex;
+    gap:10px;
+    max-width:640px;
+    margin:0 auto;
+  }
+  .bottom-bar button{
+    flex:1;
+    padding:12px;
+    border-radius:8px;
+    font-size:14px;
+    border:none;
+    cursor:pointer;
+  }
+  .btn-export{
+    background:var(--mustard);
+    color:#2A2622;
+    font-weight:600;
+  }
+  .btn-clear{
+    background:#F0E9E4;
+    color:var(--danger);
+    border:1px solid #E4CFC7 !important;
+  }
+  .toast{
+    position:fixed;
+    bottom:70px;
+    right:50%;
+    transform:translateX(50%);
+    background:var(--teal-dark);
+    color:#fff;
+    padding:8px 16px;
+    border-radius:20px;
+    font-size:13px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s;
+  }
+  .toast.show{ opacity:1; }
+
+  .copy-modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(42,38,34,0.55);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+    padding:20px;
+  }
+  .copy-modal{
+    background:var(--surface);
+    border-radius:var(--radius);
+    padding:18px;
+    width:100%;
+    max-width:480px;
+    max-height:85vh;
+    display:flex;
+    flex-direction:column;
+  }
+  .copy-modal h3{
+    margin:0 0 6px;
+    font-family:Georgia,serif;
+    color:var(--teal-dark);
+  }
+  .copy-hint{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+    line-height:1.5;
+  }
+  #copy-textarea{
+    flex:1;
+    min-height:220px;
+    resize:vertical;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px;
+    font-size:13px;
+    font-family:-apple-system,sans-serif;
+    background:#FBFAF6;
+    color:var(--ink);
+    direction:rtl;
+    white-space:pre-wrap;
+  }
+  .copy-modal-actions{
+    display:flex;
+    gap:10px;
+    margin-top:10px;
+  }
+  .copy-modal-actions button{
+    flex:1;
+    padding:11px;
+    border-radius:8px;
+    font-size:14px;
+    border:none;
+    cursor:pointer;
+  }
+  .copy-status{
+    font-size:12.5px;
+    color:var(--teal-dark);
+    margin:8px 0 0;
+    min-height:16px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>רשימת הקניות שלי</h1>
+  <p id="item-count-sub">הרשימה ריקה כרגע</p>
+</header>
+
+<main>
+  <div class="section-title">בחר קטגוריה</div>
+  <div class="cat-row" id="cat-row"></div>
+  <div class="preset-grid" id="preset-grid"></div>
+
+  <div class="add-custom">
+    <div class="row">
+      <input type="text" id="custom-name" placeholder="הוסף מוצר חדש...">
+      <select id="custom-cat"></select>
+    </div>
+    <div class="row">
+      <select id="custom-unit">
+        <option value="יח'">יח'</option>
+        <option value="ק&quot;ג">ק"ג</option>
+        <option value="גרם">גרם</option>
+        <option value="ליטר">ליטר</option>
+        <option value="חבילה">חבילה</option>
+      </select>
+      <button id="custom-add-btn" style="flex:1;">הוסף לרשימה</button>
+    </div>
+  </div>
+
+  <div class="section-title">הרשימה שלי <span class="count" id="list-count"></span></div>
+  <div id="list-container"></div>
+</main>
+
+<div class="bottom-bar">
+  <button class="btn-clear" id="clear-btn">נקה הכל</button>
+  <button class="btn-export" id="export-btn">העתק רשימה</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Hidden render target used for PDF capture -->
+<div id="copy-modal" class="copy-modal-overlay" style="display:none;">
+  <div class="copy-modal">
+    <h3>הרשימה שלי</h3>
+    <p class="copy-hint">לחץ "העתק", או סמן את הטקסט ידנית והעתק אותו. אפשר להדביק אותו בפתקים/עמודים ולשמור כ-PDF משם, או להדביק אותו כאן בצ'אט כדי שאייצר לך קובץ PDF.</p>
+    <textarea id="copy-textarea" readonly></textarea>
+    <div class="copy-modal-actions">
+      <button id="copy-btn" class="btn-export">העתק</button>
+      <button id="copy-close-btn" class="btn-clear">סגור</button>
+    </div>
+    <p id="copy-status" class="copy-status"></p>
+  </div>
+</div>
+
+<div id="confirm-modal" class="copy-modal-overlay" style="display:none;">
+  <div class="copy-modal" style="max-width:340px;">
+    <h3>למחוק את כל הרשימה?</h3>
+    <p class="copy-hint">הפעולה תמחק את כל הפריטים ולא ניתן לבטל אותה.</p>
+    <div class="copy-modal-actions">
+      <button id="confirm-yes-btn" class="btn-clear">כן, מחק הכל</button>
+      <button id="confirm-no-btn" class="btn-export">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CATEGORIES = [
+  { id:"produce", name:"ירקות ופירות", items:["עגבניות","מלפפונים","בצל","תפוחי אדמה","גזר","פלפל","תפוחים","בננות","לימון","אבוקדו"] },
+  { id:"dairy", name:"מוצרי חלב וביצים", items:["חלב","ביצים","גבינה צהובה","גבינה לבנה","יוגורט","חמאה","שמנת"] },
+  { id:"meat", name:"בשר, עוף ודגים", items:["חזה עוף","בשר טחון","סטייק","נקניקיות","טונה טרייה","סלמון"] },
+  { id:"bakery", name:"מאפים ולחם", items:["לחם","פיתות","לחמניות","בגט","קרואסון"] },
+  { id:"pantry", name:"שימורים ויבשים", items:["אורז","פסטה","קמח","סוכר","שמן","עדשים","חומוס","טונה משומרת","רסק עגבניות"] },
+  { id:"snacks", name:"חטיפים ומתוקים", items:["שוקולד","במבה","ביסלי","עוגיות","חטיפי דגנים"] },
+  { id:"drinks", name:"משקאות", items:["מים","קולה","מיץ","בירה","יין","קפה","תה"] },
+  { id:"frozen", name:"קפואים", items:["ירקות קפואים","פיצה קפואה","גלידה","בצק עלים"] },
+  { id:"cleaning", name:"ניקיון ובית", items:["נייר טואלט","מגבות נייר","סבון כלים","אקונומיקה","שקיות אשפה","מטליות"] },
+  { id:"personal", name:"טיפוח והיגיינה", items:["שמפו","סבון","משחת שיניים","דאודורנט","מגבונים"] },
+  { id:"other", name:"אחר", items:[] }
+];
+
+const STORAGE_KEY = "shopping-list-items";
+let list = [];
+let activeCat = CATEGORIES[0].id;
+
+const catRow = document.getElementById("cat-row");
+const presetGrid = document.getElementById("preset-grid");
+const listContainer = document.getElementById("list-container");
+const customCatSelect = document.getElementById("custom-cat");
+const toastEl = document.getElementById("toast");
+const listCountEl = document.getElementById("list-count");
+const subHeader = document.getElementById("item-count-sub");
+
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  setTimeout(()=> toastEl.classList.remove("show"), 1400);
+}
+
+function catName(id){
+  const c = CATEGORIES.find(c=>c.id===id);
+  return c ? c.name : "אחר";
+}
+
+let storageAvailable = true;
+let storageWarned = false;
+
+async function loadList(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY);
+    list = res && res.value ? JSON.parse(res.value) : [];
+  }catch(e){
+    list = [];
+  }
+  render();
+}
+
+async function saveList(){
+  if(!storageAvailable) return;
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(list));
+  }catch(e){
+    storageAvailable = false;
+    if(!storageWarned){
+      storageWarned = true;
+      showToast("שמירה אוטומטית לא זמינה כרגע — הרשימה תישמר עד שתסגור את החלון");
+    }
+  }
+}
+
+function renderCatRow(){
+  catRow.innerHTML = "";
+  CATEGORIES.forEach(cat=>{
+    const chip = document.createElement("div");
+    chip.className = "cat-chip" + (cat.id===activeCat ? " active" : "");
+    chip.textContent = cat.name;
+    chip.onclick = ()=>{ activeCat = cat.id; renderCatRow(); renderPresetGrid(); };
+    catRow.appendChild(chip);
+  });
+}
+
+function renderPresetGrid(){
+  presetGrid.innerHTML = "";
+  const cat = CATEGORIES.find(c=>c.id===activeCat);
+  if(!cat || cat.items.length===0){
+    presetGrid.innerHTML = '<div style="color:var(--ink-soft);font-size:13px;padding:6px 0;">אין פריטים מוגדרים מראש בקטגוריה זו — הוסף פריט מותאם למטה.</div>';
+    return;
+  }
+  cat.items.forEach(itemName=>{
+    const el = document.createElement("div");
+    el.className = "preset-item";
+    el.innerHTML = `<span class="plus">+</span><span>${itemName}</span>`;
+    el.onclick = ()=> addItem(itemName, cat.id, 1, "יח'");
+    presetGrid.appendChild(el);
+  });
+}
+
+function addItem(name, catId, qty, unit){
+  name = name.trim();
+  if(!name) return;
+  const existing = list.find(i=> i.name===name && i.catId===catId);
+  if(existing){
+    existing.qty += qty;
+  }else{
+    list.push({ id: Date.now()+Math.random().toString(16).slice(2), name, catId, qty, unit, checked:false });
+  }
+  saveList();
+  render();
+  showToast(`נוסף: ${name}`);
+}
+
+function updateQty(id, delta){
+  const item = list.find(i=>i.id===id);
+  if(!item) return;
+  item.qty = Math.max(1, item.qty + delta);
+  saveList();
+  render();
+}
+
+function removeItem(id){
+  list = list.filter(i=>i.id!==id);
+  saveList();
+  render();
+}
+
+function toggleChecked(id){
+  const item = list.find(i=>i.id===id);
+  if(!item) return;
+  item.checked = !item.checked;
+  saveList();
+  render();
+}
+
+function renderList(){
+  listContainer.innerHTML = "";
+  listCountEl.textContent = list.length ? `(${list.length} פריטים)` : "";
+  subHeader.textContent = list.length ? `${list.length} פריטים ברשימה` : "הרשימה ריקה כרגע";
+
+  if(list.length===0){
+    listContainer.innerHTML = '<div class="empty-state">עדיין לא הוספת פריטים. בחר מהתפריט למעלה או הוסף פריט משלך.</div>';
+    return;
+  }
+
+  const grouped = {};
+  list.forEach(item=>{
+    if(!grouped[item.catId]) grouped[item.catId] = [];
+    grouped[item.catId].push(item);
+  });
+
+  CATEGORIES.forEach(cat=>{
+    const items = grouped[cat.id];
+    if(!items || items.length===0) return;
+    const group = document.createElement("div");
+    group.className = "list-group";
+    const h3 = document.createElement("h3");
+    h3.textContent = cat.name;
+    group.appendChild(h3);
+    items.forEach(item=>{
+      const row = document.createElement("div");
+      row.className = "item-row";
+      row.innerHTML = `
+        <span class="item-name ${item.checked ? 'checked':''}" style="cursor:pointer;">${item.name}</span>
+        <div class="qty-controls">
+          <button class="qty-minus">−</button>
+          <span class="qty-val">${item.qty}</span>
+          <button class="qty-plus">+</button>
+          <span class="unit-label">${item.unit}</span>
+          <button class="del-btn">✕</button>
+        </div>
+      `;
+      row.querySelector(".item-name").onclick = ()=> toggleChecked(item.id);
+      row.querySelector(".qty-minus").onclick = ()=> updateQty(item.id, -1);
+      row.querySelector(".qty-plus").onclick = ()=> updateQty(item.id, 1);
+      row.querySelector(".del-btn").onclick = ()=> removeItem(item.id);
+      group.appendChild(row);
+    });
+    listContainer.appendChild(group);
+  });
+}
+
+function render(){
+  renderList();
+}
+
+function populateCustomCatSelect(){
+  customCatSelect.innerHTML = "";
+  CATEGORIES.forEach(cat=>{
+    const opt = document.createElement("option");
+    opt.value = cat.id;
+    opt.textContent = cat.name;
+    customCatSelect.appendChild(opt);
+  });
+}
+
+document.getElementById("custom-add-btn").onclick = ()=>{
+  const nameInput = document.getElementById("custom-name");
+  const unit = document.getElementById("custom-unit").value;
+  const catId = customCatSelect.value;
+  const name = nameInput.value.trim();
+  if(!name){ showToast("הקלד שם מוצר"); return; }
+  addItem(name, catId, 1, unit);
+  nameInput.value = "";
+};
+
+document.getElementById("custom-name").addEventListener("keydown", (e)=>{
+  if(e.key === "Enter") document.getElementById("custom-add-btn").click();
+});
+
+document.getElementById("clear-btn").onclick = ()=>{
+  if(list.length===0) return;
+  document.getElementById("confirm-modal").style.display = "flex";
+};
+
+document.getElementById("confirm-yes-btn").onclick = ()=>{
+  list = [];
+  saveList();
+  render();
+  document.getElementById("confirm-modal").style.display = "none";
+};
+
+document.getElementById("confirm-no-btn").onclick = ()=>{
+  document.getElementById("confirm-modal").style.display = "none";
+};
+
+function buildListText(){
+  const today = new Date().toLocaleDateString("he-IL");
+  let text = `רשימת קניות - ${today}\n\n`;
+  const grouped = {};
+  list.forEach(item=>{
+    if(!grouped[item.catId]) grouped[item.catId] = [];
+    grouped[item.catId].push(item);
+  });
+  CATEGORIES.forEach(cat=>{
+    const items = grouped[cat.id];
+    if(!items || items.length===0) return;
+    text += `${cat.name}:\n`;
+    items.forEach(item=>{
+      text += `- ${item.name} (${item.qty} ${item.unit})\n`;
+    });
+    text += "\n";
+  });
+  return text.trim();
+}
+
+document.getElementById("export-btn").onclick = ()=>{
+  if(list.length===0){ showToast("הרשימה ריקה"); return; }
+  const modal = document.getElementById("copy-modal");
+  const textarea = document.getElementById("copy-textarea");
+  document.getElementById("copy-status").textContent = "";
+  textarea.value = buildListText();
+  modal.style.display = "flex";
+  setTimeout(()=>{ textarea.focus(); textarea.select(); }, 50);
+};
+
+document.getElementById("copy-close-btn").onclick = ()=>{
+  document.getElementById("copy-modal").style.display = "none";
+};
+
+document.getElementById("copy-btn").onclick = async ()=>{
+  const textarea = document.getElementById("copy-textarea");
+  const status = document.getElementById("copy-status");
+  textarea.focus();
+  textarea.select();
+  try{
+    await navigator.clipboard.writeText(textarea.value);
+    status.textContent = "הועתק! עכשיו אפשר להדביק בפתקים או כאן בצ'אט.";
+  }catch(e){
+    const ok = document.execCommand && document.execCommand("copy");
+    status.textContent = ok
+      ? "הועתק! עכשיו אפשר להדביק בפתקים או כאן בצ'אט."
+      : "ההעתקה האוטומטית לא זמינה — הטקסט מסומן, לחץ והחזק כדי להעתיק ידנית.";
+  }
+};
+populateCustomCatSelect();
+renderCatRow();
+renderPresetGrid();
+loadList();
+</script>
+</body>
+</html>
