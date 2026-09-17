@@ -9,14 +9,14 @@ const rubik = Rubik({
 });
 
 export const metadata: Metadata = {
-  title: "שופינג - חנות אונליין",
-  description: "חנות מקוונת מודרנית - קטלוג מוצרים, עגלת קניות וקופה מהירה.",
+  title: "רשימת קניות",
+  description: "אפליקציית רשימת קניות לסופר — קטגוריות, פריטים מוגדרים מראש, כמויות והעתקת הרשימה.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#059669",
+  themeColor: "#115e59",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -25,9 +25,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
         <Header />
         <main className="flex-1">{children}</main>
-        <footer className="border-t border-black/5 py-6 text-center text-sm text-neutral-500 dark:border-white/10 dark:text-neutral-400">
-          © {new Date().getFullYear()} שופינג — חנות הדגמה. כל הזכויות שמורות.
-        </footer>
       </body>
     </html>
   );
