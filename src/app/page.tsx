@@ -1,111 +1,107 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { categories, products } from "@/lib/products";
-import { ProductCard } from "@/components/ProductCard";
+import { categories } from "@/lib/categories";
+import { Unit } from "@/lib/types";
+import { useShoppingList } from "@/hooks/useShoppingList";
+import { useToast } from "@/hooks/useToast";
+import { CategoryPicker } from "@/components/CategoryPicker";
+import { ShoppingListView } from "@/components/ShoppingListView";
+import { ExportListModal } from "@/components/ExportListModal";
+import { ConfirmClearModal } from "@/components/ConfirmClearModal";
+import { Toast } from "@/components/Toast";
 
-type SortOption = "default" | "price-asc" | "price-desc" | "rating";
+function buildListText(items: ReturnType<typeof useShoppingList>["items"]): string {
+  const today = new Date().toLocaleDateString("he-IL");
+  let text = `רשימת קניות - ${today}\n\n`;
 
-const sortLabels: Record<SortOption, string> = {
-  default: "מיון: מומלץ",
-  "price-asc": "מחיר: מהנמוך לגבוה",
-  "price-desc": "מחיר: מהגבוה לנמוך",
-  rating: "דירוג גבוה",
-};
+  categories.forEach((cat) => {
+    const catItems = items.filter((i) => i.categoryId === cat.id);
+    if (catItems.length === 0) return;
+    text += `${cat.name}:\n`;
+    catItems.forEach((item) => {
+      text += `- ${item.name} (${item.quantity} ${item.unit})\n`;
+    });
+    text += "\n";
+  });
+
+  return text.trim();
+}
 
 export default function HomePage() {
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<string>("הכל");
-  const [sort, setSort] = useState<SortOption>("default");
+  const { items, addItem, updateQuantity, toggleChecked, removeItem, clearList } = useShoppingList();
+  const { message, showToast } = useToast();
+  const [exportOpen, setExportOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    let list = products.filter((p) => {
-      const matchesCategory = category === "הכל" || p.category === category;
-      const matchesQuery =
-        !q ||
-        p.name.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q);
-      return matchesCategory && matchesQuery;
-    });
+  const exportText = useMemo(() => buildListText(items), [items]);
 
-    list = [...list];
-    if (sort === "price-asc") list.sort((a, b) => a.price - b.price);
-    if (sort === "price-desc") list.sort((a, b) => b.price - a.price);
-    if (sort === "rating") list.sort((a, b) => b.rating - a.rating);
-
-    return list;
-  }, [query, category, sort]);
+  function handleAdd(name: string, categoryId: string, unit: Unit) {
+    addItem(name, categoryId, unit);
+    showToast(`נוסף: ${name.trim()}`);
+  }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-      <section className="mb-8 overflow-hidden rounded-3xl bg-gradient-to-l from-emerald-600 to-teal-600 px-6 py-10 text-white shadow-sm sm:px-10">
-        <h1 className="text-2xl font-extrabold sm:text-3xl">ברוכים הבאים לשופינג 🛍️</h1>
-        <p className="mt-2 max-w-xl text-emerald-50">
-          מגוון רחב של מוצרים באיכות גבוהה, במחירים משתלמים, עם משלוח מהיר עד הבית.
+    <div className="mx-auto max-w-xl px-4 pb-28 pt-6 sm:px-6">
+      <div className="mb-6 rounded-2xl bg-teal-800 px-5 py-4 text-white shadow-sm">
+        <h1 className="text-lg font-bold">רשימת הקניות שלי</h1>
+        <p className="mt-0.5 text-sm text-teal-100">
+          {items.length > 0 ? `${items.length} פריטים ברשימה` : "הרשימה ריקה כרגע"}
         </p>
-      </section>
-
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="חיפוש מוצרים..."
-            className="w-full rounded-full border border-black/10 bg-white px-4 py-2.5 pe-10 text-sm shadow-sm outline-none ring-emerald-500 focus:ring-2 dark:border-white/10 dark:bg-neutral-900"
-          />
-          <span aria-hidden className="pointer-events-none absolute end-3.5 top-1/2 -translate-y-1/2 text-neutral-400">
-            🔎
-          </span>
-        </div>
-
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value as SortOption)}
-          className="rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm shadow-sm outline-none focus:ring-2 focus:ring-emerald-500 dark:border-white/10 dark:bg-neutral-900"
-        >
-          {Object.entries(sortLabels).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-2">
-        {categories.map((c) => (
+      <CategoryPicker onAdd={handleAdd} />
+
+      <div className="mt-6 mb-2 flex items-center gap-2">
+        <h2 className="text-base font-bold text-neutral-800 dark:text-neutral-100">הרשימה שלי</h2>
+        {items.length > 0 && (
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">({items.length} פריטים)</span>
+        )}
+      </div>
+
+      <ShoppingListView
+        items={items}
+        onToggle={toggleChecked}
+        onQuantityChange={updateQuantity}
+        onRemove={removeItem}
+      />
+
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-black/5 bg-white/95 px-4 py-3 backdrop-blur dark:border-white/10 dark:bg-neutral-950/95">
+        <div className="mx-auto flex max-w-xl gap-3">
           <button
-            key={c}
             type="button"
-            onClick={() => setCategory(c)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-              category === c
-                ? "bg-emerald-600 text-white shadow-sm"
-                : "bg-white text-neutral-600 ring-1 ring-black/10 hover:bg-neutral-100 dark:bg-neutral-900 dark:text-neutral-300 dark:ring-white/10 dark:hover:bg-white/10"
-            }`}
+            onClick={() => items.length > 0 && setConfirmOpen(true)}
+            disabled={items.length === 0}
+            className="flex-1 rounded-lg bg-neutral-100 px-4 py-3 text-sm font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-neutral-900 dark:text-red-400 dark:ring-red-900"
           >
-            {c}
+            נקה הכל
           </button>
-        ))}
+          <button
+            type="button"
+            onClick={() => {
+              if (items.length === 0) {
+                showToast("הרשימה ריקה");
+                return;
+              }
+              setExportOpen(true);
+            }}
+            className="flex-1 rounded-lg bg-amber-500 px-4 py-3 text-sm font-semibold text-neutral-900 transition hover:bg-amber-600"
+          >
+            העתק רשימה
+          </button>
+        </div>
       </div>
 
-      <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
-        {filtered.length} מוצרים נמצאו
-      </p>
-
-      {filtered.length > 0 ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {filtered.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-black/10 py-16 text-center text-neutral-500 dark:border-white/10">
-          <span className="text-3xl">🔍</span>
-          <p>לא נמצאו מוצרים התואמים את החיפוש.</p>
-        </div>
-      )}
+      <ExportListModal open={exportOpen} text={exportText} onClose={() => setExportOpen(false)} />
+      <ConfirmClearModal
+        open={confirmOpen}
+        onConfirm={() => {
+          clearList();
+          setConfirmOpen(false);
+        }}
+        onCancel={() => setConfirmOpen(false)}
+      />
+      <Toast message={message} />
     </div>
   );
 }
