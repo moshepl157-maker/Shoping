@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { categories } from "@/lib/categories";
 import { UNITS, Unit } from "@/lib/types";
+import { useCustomPresets } from "@/hooks/useCustomPresets";
 
 export function CategoryPicker({
   onAdd,
@@ -12,8 +13,18 @@ export function CategoryPicker({
   const [activeCategory, setActiveCategory] = useState(categories[0].id);
   const [customName, setCustomName] = useState("");
   const [customUnit, setCustomUnit] = useState<Unit>(UNITS[0]);
+  const { presets: customPresets, addCustomPreset } = useCustomPresets();
 
   const active = categories.find((c) => c.id === activeCategory) ?? categories[0];
+  const activePresetItems = useMemo(
+    () => [...active.presetItems, ...(customPresets[active.id] ?? [])],
+    [active, customPresets]
+  );
+
+  function addCustomItem(name: string, categoryId: string, unit: Unit) {
+    onAdd(name, categoryId, unit);
+    addCustomPreset(categoryId, name);
+  }
 
   return (
     <div>
@@ -37,12 +48,12 @@ export function CategoryPicker({
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        {active.presetItems.length === 0 ? (
+        {activePresetItems.length === 0 ? (
           <p className="py-1.5 text-sm text-neutral-500 dark:text-neutral-400">
             אין פריטים מוגדרים מראש בקטגוריה זו — הוסף פריט מותאם למטה.
           </p>
         ) : (
-          active.presetItems.map((item) => (
+          activePresetItems.map((item) => (
             <button
               key={item}
               type="button"
@@ -64,7 +75,7 @@ export function CategoryPicker({
             onChange={(e) => setCustomName(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && customName.trim()) {
-                onAdd(customName, activeCategory, customUnit);
+                addCustomItem(customName, activeCategory, customUnit);
                 setCustomName("");
               }
             }}
@@ -99,7 +110,7 @@ export function CategoryPicker({
             type="button"
             onClick={() => {
               if (!customName.trim()) return;
-              onAdd(customName, activeCategory, customUnit);
+              addCustomItem(customName, activeCategory, customUnit);
               setCustomName("");
             }}
             className="flex-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-800"
