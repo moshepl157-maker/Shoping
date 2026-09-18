@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ConfirmClearModal } from "@/components/ConfirmClearModal";
 import { DuplicatesPanel } from "@/components/insurance/DuplicatesPanel";
 import { InsuranceReportModal } from "@/components/insurance/InsuranceReportModal";
+import { PdfImportPanel } from "@/components/insurance/PdfImportPanel";
 import { PolicyForm } from "@/components/insurance/PolicyForm";
 import { PolicyFormModal } from "@/components/insurance/PolicyFormModal";
 import { PolicyList } from "@/components/insurance/PolicyList";
@@ -65,6 +66,7 @@ export default function InsurancePage() {
     useInsuranceComparison();
   const { message, showToast } = useToast();
   const [editingPolicy, setEditingPolicy] = useState<InsurancePolicy | null>(null);
+  const [extractedPolicy, setExtractedPolicy] = useState<PolicyInput | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -101,8 +103,12 @@ export default function InsurancePage() {
 
       <SummaryBar summary={summary} />
 
+      <div className="mt-6">
+        <PdfImportPanel onExtracted={setExtractedPolicy} />
+      </div>
+
       <div className="mt-6 rounded-2xl bg-white p-4 ring-1 ring-black/10 dark:bg-neutral-900 dark:ring-white/10">
-        <h2 className="mb-3 text-base font-bold text-neutral-800 dark:text-neutral-100">הוספת פוליסה</h2>
+        <h2 className="mb-3 text-base font-bold text-neutral-800 dark:text-neutral-100">הוספת פוליסה ידנית</h2>
         <PolicyForm submitLabel="הוסף פוליסה" onSubmit={handleAdd} />
       </div>
 
@@ -160,6 +166,14 @@ export default function InsurancePage() {
         initial={editingPolicy ?? undefined}
         onSubmit={handleUpdate}
         onClose={() => setEditingPolicy(null)}
+      />
+      <PolicyFormModal
+        open={extractedPolicy !== null}
+        initial={extractedPolicy ?? undefined}
+        title="בדוק ואשר את הפרטים שחולצו"
+        submitLabel="הוסף פוליסה"
+        onSubmit={handleAdd}
+        onClose={() => setExtractedPolicy(null)}
       />
       <InsuranceReportModal open={reportOpen} text={reportText} onClose={() => setReportOpen(false)} />
       <ConfirmClearModal
